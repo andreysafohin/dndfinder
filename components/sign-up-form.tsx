@@ -57,6 +57,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
       // If session is null, email confirmation is required
       if (data.session && data.user) {
         // User is immediately authenticated - create profile and redirect
+        const user = data.user
         try {
           const response = await fetch('/auth/sign-up/actions', {
             method: 'POST',
@@ -64,7 +65,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              userId: data.user.id,
+              userId: user.id,
               role,
             }),
           })
