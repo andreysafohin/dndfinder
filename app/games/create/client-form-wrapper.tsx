@@ -30,7 +30,6 @@ export function ClientFormWrapper() {
       }
       
       router.push('/games/my-games')
-      router.refresh()
     } catch (error) {
       throw error
     }

@@ -19,13 +19,14 @@ export async function GET(request: NextRequest) {
     })
     if (!error && data.user) {
       // Create master/player profile if role is set in metadata
-      const role = data.user.user_metadata?.role as 'master' | 'player' | undefined
+      const user = data.user
+      const role = user.user_metadata?.role as 'master' | 'player' | undefined
       
       if (role) {
         try {
           // Use database function to create profile (idempotent, uses on conflict do nothing)
           const { error: profileError } = await supabase.rpc('create_role_profile', {
-            p_user_id: data.user.id,
+            p_user_id: user.id,
             p_role: role,
           })
 
