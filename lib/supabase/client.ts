@@ -22,20 +22,34 @@ export function createClient() {
     console.error('  - Publishable key (starts with "sb_publishable_")')
   }
 
-  if (supabaseKey && !supabaseKey.startsWith('eyJ') && !supabaseKey.startsWith('sb_publishable_')) {
+  // Проверка и очистка ключа от пробелов
+  const cleanKey = supabaseKey.trim()
+  
+  if (cleanKey && !cleanKey.startsWith('eyJ') && !cleanKey.startsWith('sb_publishable_')) {
     console.error('⚠️ Supabase key format looks incorrect!')
     console.error('Key should start with:')
     console.error('  - "eyJ" for legacy anon key')
     console.error('  - "sb_publishable_" for publishable key')
-    console.error('Current key starts with:', supabaseKey.substring(0, 20) + '...')
+    console.error('Current key starts with:', cleanKey.substring(0, 20) + '...')
+    console.error('Key length:', cleanKey.length)
   }
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !cleanKey) {
     // В продакшене не бросаем ошибку, чтобы не ломать приложение, но логируем
     if (process.env.NODE_ENV === 'development') {
       throw new Error('Supabase environment variables are not configured. Check console for details.')
     }
   }
 
-  return createBrowserClient(supabaseUrl, supabaseKey)
+  // Логирование для диагностики (только первые символы для безопасности)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Supabase config:', {
+      url: supabaseUrl,
+      keyPrefix: cleanKey.substring(0, 20) + '...',
+      keyLength: cleanKey.length,
+      keyType: cleanKey.startsWith('sb_publishable_') ? 'publishable' : cleanKey.startsWith('eyJ') ? 'anon' : 'unknown'
+    })
+  }
+
+  return createBrowserClient(supabaseUrl, cleanKey)
 }
