@@ -42,13 +42,22 @@ export function createClient() {
   }
 
   // Логирование для диагностики (только первые символы для безопасности)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Supabase config:', {
-      url: supabaseUrl,
-      keyPrefix: cleanKey.substring(0, 20) + '...',
-      keyLength: cleanKey.length,
-      keyType: cleanKey.startsWith('sb_publishable_') ? 'publishable' : cleanKey.startsWith('eyJ') ? 'anon' : 'unknown'
-    })
+  // Включаем логирование и в продакшене для диагностики проблем
+  console.log('🔍 Supabase config check:', {
+    url: supabaseUrl ? '✅ Set' : '❌ Missing',
+    urlValue: supabaseUrl || 'NOT SET',
+    keyPrefix: cleanKey ? cleanKey.substring(0, 30) + '...' : 'NOT SET',
+    keyLength: cleanKey.length,
+    keyType: cleanKey.startsWith('sb_publishable_') ? 'publishable ✅' : 
+             cleanKey.startsWith('eyJ') ? 'anon ✅' : 
+             cleanKey.startsWith('sb_secret_') ? 'secret ❌ (WRONG TYPE!)' : 'unknown ❌',
+    isValid: cleanKey.startsWith('sb_publishable_') || cleanKey.startsWith('eyJ')
+  })
+
+  // Предупреждение, если используется secret key
+  if (cleanKey.startsWith('sb_secret_')) {
+    console.error('❌ ERROR: You are using a SECRET key! Secret keys should NEVER be used in the browser!')
+    console.error('Use publishable key (sb_publishable_...) or anon key (eyJ...) instead!')
   }
 
   return createBrowserClient(supabaseUrl, cleanKey)
