@@ -13,20 +13,34 @@ export function Header() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      setIsAuthenticated(!!user)
-      setUserEmail(user?.email || null)
+      try {
+        const supabase = createClient()
+        const { data: { user }, error } = await supabase.auth.getUser()
+        if (error) {
+          console.error('Auth error:', error)
+          return
+        }
+        setIsAuthenticated(!!user)
+        setUserEmail(user?.email || null)
+      } catch (error) {
+        console.error('Failed to check auth:', error)
+        setIsAuthenticated(false)
+        setUserEmail(null)
+      }
     }
     checkAuth()
 
-    const supabase = createClient()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      checkAuth()
-    })
+    try {
+      const supabase = createClient()
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+        checkAuth()
+      })
 
-    return () => {
-      subscription.unsubscribe()
+      return () => {
+        subscription.unsubscribe()
+      }
+    } catch (error) {
+      console.error('Failed to set up auth listener:', error)
     }
   }, [])
 

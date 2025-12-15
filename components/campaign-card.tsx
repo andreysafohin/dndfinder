@@ -28,16 +28,21 @@ export function CampaignCard({ campaign }: CampaignCardProps) {
   const router = useRouter()
 
   const handleJoin = async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
+    try {
+      const supabase = createClient()
+      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      if (error || !user) {
+        router.push('/auth/login')
+        return
+      }
+      
+      // TODO: Реализовать логику вступления в партию
+      alert('Функция вступления в партию будет реализована позже')
+    } catch (error) {
+      console.error('Failed to check auth:', error)
       router.push('/auth/login')
-      return
     }
-    
-    // TODO: Реализовать логику вступления в партию
-    alert('Функция вступления в партию будет реализована позже')
   }
 
   return (
