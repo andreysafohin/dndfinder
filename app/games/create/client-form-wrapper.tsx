@@ -1,8 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { GameForm } from '@/components/game-form'
-import { createGame, GameFormData } from './actions'
+import { GameForm, GameFormData } from '@/components/game-form'
+import { createGame } from './actions'
 import { uploadGameImage } from '@/lib/storage'
 
 export function ClientFormWrapper() {
@@ -11,8 +11,8 @@ export function ClientFormWrapper() {
   async function handleSubmit(data: GameFormData) {
     try {
       // Если есть файл, не передаем image_url (будет установлен после загрузки)
-      const gameData = { ...data }
-      if (data.imageFile) {
+      const { imageFile, ...gameData } = data
+      if (imageFile) {
         gameData.image_url = undefined
       }
       
@@ -20,9 +20,9 @@ export function ClientFormWrapper() {
       const gameId = await createGame(gameData)
       
       // Если есть файл изображения, загружаем его (функция сама обновит image_url в БД)
-      if (data.imageFile && gameId) {
+      if (imageFile && gameId) {
         try {
-          await uploadGameImage(gameId, data.imageFile)
+          await uploadGameImage(gameId, imageFile)
         } catch (uploadError) {
           console.error('Error uploading image:', uploadError)
           // Не прерываем процесс, игра уже создана

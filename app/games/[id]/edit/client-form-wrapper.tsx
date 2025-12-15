@@ -1,8 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { GameForm } from '@/components/game-form'
-import { updateGame, GameFormData } from './actions'
+import { GameForm, GameFormData } from '@/components/game-form'
+import { updateGame } from './actions'
 import { Game } from '@/lib/supabase/types'
 import { uploadGameImage } from '@/lib/storage'
 
@@ -16,17 +16,17 @@ export function ClientFormWrapper({ game }: ClientFormWrapperProps) {
   async function handleSubmit(data: GameFormData) {
     try {
       // Если есть файл, не передаем image_url (будет установлен после загрузки)
-      const gameData = { ...data }
-      if (data.imageFile) {
+      const { imageFile, ...gameData } = data
+      if (imageFile) {
         gameData.image_url = undefined
       }
       
       await updateGame(game.id, gameData)
       
       // Если есть новый файл изображения, загружаем его (функция сама обновит image_url в БД)
-      if (data.imageFile) {
+      if (imageFile) {
         try {
-          await uploadGameImage(game.id, data.imageFile)
+          await uploadGameImage(game.id, imageFile)
         } catch (uploadError) {
           console.error('Error uploading image:', uploadError)
           // Не прерываем процесс, игра уже обновлена
