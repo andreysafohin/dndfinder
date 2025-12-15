@@ -13,13 +13,39 @@ export async function GET(request: NextRequest) {
   if (token_hash && type) {
     const supabase = await createClient()
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { data, error } = await supabase.auth.verifyOtp({
       type,
       token_hash,
     })
-    if (!error) {
-      // redirect user to specified redirect URL or root of app
-      redirect(next)
+    if (!error && data.user) {
+      // Create master/player profile if role is set in metadata
+      const role = data.user.user_metadata?.role as 'master' | 'player' | undefined
+      
+      if (role) {
+        try {
+          // Use database function to create profile (idempotent, uses on conflict do nothing)
+          const { error: profileError } = await supabase.rpc('create_role_profile', {
+            p_user_id: data.user.id,
+            p_role: role,
+          })
+
+          if (profileError) {
+            // Log error but don't block the redirect
+            console.error('Error creating role profile:', profileError)
+          }
+        } catch (profileError) {
+          // Log error but don't block the redirect
+          console.error('Error creating role profile:', profileError)
+        }
+      }
+
+      // Redirect based on role if specified, otherwise use next parameter
+      // Note: /games/create will be created in Phase 2, redirecting to home for now
+      if (role === 'player' || role === 'master') {
+        redirect('/')
+      } else {
+        redirect(next)
+      }
     } else {
       // redirect the user to an error page with some instructions
       redirect(`/auth/error?error=${error?.message}`)

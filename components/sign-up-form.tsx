@@ -16,10 +16,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+type UserRole = 'master' | 'player'
+
 export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')
+  const [role, setRole] = useState<UserRole>('player')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -37,15 +40,72 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
+          emailRedirectTo: `${window.location.origin}/auth/confirm?type=signup&next=/`,
+          data: {
+            role, // Store role in user metadata for server action
+          },
         },
       })
       if (error) throw error
-      router.push('/auth/sign-up-success')
+
+      // Check if email confirmation is required
+      // If session exists, user is immediately authenticated (no email confirmation)
+      // If session is null, email confirmation is required
+      if (data.session) {
+        // User is immediately authenticated - create profile and redirect
+        try {
+          const response = await fetch('/auth/sign-up/actions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: data.user.id,
+              role,
+            }),
+          })
+
+          const result = await response.json()
+          
+          // Profile creation might be deferred, but user is authenticated
+          if (result.deferred) {
+            console.log('Profile creation deferred')
+          }
+
+          // User is authenticated - redirect to home
+          // Note: /games/create will be created in Phase 2, redirecting to home for now
+          router.push('/')
+        } catch (profileError) {
+          // If profile creation fails, still redirect (profile will be created later)
+          console.warn('Profile creation will happen later:', profileError)
+          router.push('/')
+        }
+      } else {
+        // Email confirmation required - show success page
+        // Try to create profile (will be created in confirm route if this fails)
+        if (data.user) {
+          try {
+            await fetch('/auth/sign-up/actions', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: data.user.id,
+                role,
+              }),
+            })
+          } catch (profileError) {
+            // That's okay - profile will be created in confirm route
+            console.log('Profile will be created after email confirmation')
+          }
+        }
+        router.push('/auth/sign-up-success')
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'Произошла ошибка')
     } finally {
@@ -97,6 +157,39 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                   value={repeatPassword}
                   onChange={(e) => setRepeatPassword(e.target.value)}
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label>Выберите роль</Label>
+                <div className="flex gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="role-player"
+                      name="role"
+                      value="player"
+                      checked={role === 'player'}
+                      onChange={(e) => setRole(e.target.value as UserRole)}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="role-player" className="font-normal cursor-pointer">
+                      Игрок
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="role-master"
+                      name="role"
+                      value="master"
+                      checked={role === 'master'}
+                      onChange={(e) => setRole(e.target.value as UserRole)}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="role-master" className="font-normal cursor-pointer">
+                      Мастер
+                    </Label>
+                  </div>
+                </div>
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>

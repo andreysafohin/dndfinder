@@ -10,6 +10,8 @@ import { LogoutButton } from "@/components/logout-button"
 export function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [isMaster, setIsMaster] = useState(false)
+  const [isPlayer, setIsPlayer] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -17,13 +19,35 @@ export function Header() {
         const supabase = createClient()
         const { data: { user }, error } = await supabase.auth.getUser()
         if (error) {
-          console.error('Auth error:', error)
+          // AuthSessionMissingError is expected when user is not authenticated
+          // Only log unexpected errors
+          if (error.name !== 'AuthSessionMissingError') {
+            console.error('Auth error:', error)
+          }
+          setIsAuthenticated(false)
+          setUserEmail(null)
           return
         }
         setIsAuthenticated(!!user)
         setUserEmail(user?.email || null)
-      } catch (error) {
-        console.error('Failed to check auth:', error)
+        
+        // Проверяем роль пользователя
+        if (user) {
+          const [masterResult, playerResult] = await Promise.all([
+            supabase.from('masters').select('id').eq('id', user.id).single(),
+            supabase.from('players').select('id').eq('id', user.id).single(),
+          ])
+          setIsMaster(!!masterResult.data)
+          setIsPlayer(!!playerResult.data)
+        } else {
+          setIsMaster(false)
+          setIsPlayer(false)
+        }
+      } catch (error: unknown) {
+        // Only log unexpected errors
+        if (error instanceof Error && error.name !== 'AuthSessionMissingError') {
+          console.error('Failed to check auth:', error)
+        }
         setIsAuthenticated(false)
         setUserEmail(null)
       }
@@ -59,6 +83,21 @@ export function Header() {
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <>
+              {isMaster && (
+                <>
+                  <Button asChild>
+                    <Link href="/games/create">Создать игру</Link>
+                  </Button>
+                  <Button variant="ghost" asChild>
+                    <Link href="/games/my-games">Мои игры</Link>
+                  </Button>
+                </>
+              )}
+              {isPlayer && (
+                <Button variant="ghost" asChild>
+                  <Link href="/bookings/my-bookings">Мои игры</Link>
+                </Button>
+              )}
               <span className="text-sm text-muted-foreground">{userEmail}</span>
               <LogoutButton />
             </>
