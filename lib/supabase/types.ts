@@ -114,6 +114,8 @@ export interface Database {
           status: 'draft' | 'published' | 'completed' | 'cancelled'
           beginner_friendly: boolean
           genre: string | null
+          game_time: string | null
+          game_date: string | null
           created_at: string
           updated_at: string
         }
@@ -134,6 +136,8 @@ export interface Database {
           status?: 'draft' | 'published' | 'completed' | 'cancelled'
           beginner_friendly?: boolean
           genre?: string | null
+          game_time?: string | null
+          game_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -154,6 +158,8 @@ export interface Database {
           status?: 'draft' | 'published' | 'completed' | 'cancelled'
           beginner_friendly?: boolean
           genre?: string | null
+          game_time?: string | null
+          game_date?: string | null
           created_at?: string
           updated_at?: string
         }
