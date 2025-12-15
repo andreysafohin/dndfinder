@@ -50,7 +50,21 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
           },
         },
       })
-      if (error) throw error
+      
+      if (error) {
+        console.error('Sign up error:', error)
+        // Более понятные сообщения об ошибках
+        if (error.message.includes('Invalid API key') || error.status === 401) {
+          throw new Error('Ошибка конфигурации. Пожалуйста, обратитесь к администратору.')
+        }
+        if (error.message.includes('User already registered')) {
+          throw new Error('Пользователь с таким email уже зарегистрирован')
+        }
+        if (error.message.includes('Password')) {
+          throw new Error('Пароль слишком слабый. Используйте минимум 8 символов')
+        }
+        throw error
+      }
 
       // Check if email confirmation is required
       // If session exists, user is immediately authenticated (no email confirmation)
