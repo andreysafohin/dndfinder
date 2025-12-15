@@ -53,17 +53,27 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
       
       if (error) {
         console.error('Sign up error:', error)
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        })
+        
         // Более понятные сообщения об ошибках
         if (error.message.includes('Invalid API key') || error.status === 401) {
-          throw new Error('Ошибка конфигурации. Пожалуйста, обратитесь к администратору.')
+          throw new Error('Ошибка конфигурации API ключа. Проверьте настройки в Vercel: переменные окружения NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY должны быть установлены.')
         }
-        if (error.message.includes('User already registered')) {
+        if (error.message.includes('User already registered') || error.message.includes('already registered')) {
           throw new Error('Пользователь с таким email уже зарегистрирован')
         }
-        if (error.message.includes('Password')) {
+        if (error.message.includes('Password') || error.message.includes('password')) {
           throw new Error('Пароль слишком слабый. Используйте минимум 8 символов')
         }
-        throw error
+        if (error.message.includes('Email')) {
+          throw new Error('Некорректный email адрес')
+        }
+        // Общая ошибка
+        throw new Error(error.message || 'Ошибка при регистрации. Попробуйте еще раз.')
       }
 
       // Check if email confirmation is required
