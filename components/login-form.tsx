@@ -30,15 +30,42 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      if (error) throw error
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push('/')
+      
+      if (error) {
+        console.error('Login error:', error)
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        })
+        
+        // Более понятные сообщения об ошибках
+        if (error.message.includes('Invalid login credentials') || error.message.includes('Invalid credentials')) {
+          setError('Неверный email или пароль')
+        } else if (error.message.includes('Email not confirmed') || error.message.includes('email_not_confirmed')) {
+          setError('Email не подтвержден. Проверьте почту и перейдите по ссылке подтверждения.')
+        } else if (error.message.includes('Invalid API key') || error.status === 401) {
+          setError('Ошибка конфигурации API ключа. Обратитесь к администратору.')
+        } else if (error.message.includes('Too many requests')) {
+          setError('Слишком много попыток входа. Попробуйте позже.')
+        } else {
+          setError(error.message || 'Ошибка при входе. Попробуйте еще раз.')
+        }
+        return
+      }
+      
+      // Успешный вход
+      if (data?.user) {
+        router.push('/')
+        router.refresh()
+      }
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'Произошла ошибка')
+      console.error('Unexpected login error:', error)
+      setError(error instanceof Error ? error.message : 'Произошла ошибка при входе')
     } finally {
       setIsLoading(false)
     }
