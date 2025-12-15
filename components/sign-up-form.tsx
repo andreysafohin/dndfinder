@@ -89,6 +89,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
         // Email confirmation required - show success page
         // Try to create profile (will be created in confirm route if this fails)
         if (data.user) {
+          const user = data.user
           try {
             await fetch('/auth/sign-up/actions', {
               method: 'POST',
@@ -96,7 +97,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                userId: data.user.id,
+                userId: user.id,
                 role,
               }),
             })
