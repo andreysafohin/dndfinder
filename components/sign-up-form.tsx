@@ -55,7 +55,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
       // Check if email confirmation is required
       // If session exists, user is immediately authenticated (no email confirmation)
       // If session is null, email confirmation is required
-      if (data.session) {
+      if (data.session && data.user) {
         // User is immediately authenticated - create profile and redirect
         try {
           const response = await fetch('/auth/sign-up/actions', {
